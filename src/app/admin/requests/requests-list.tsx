@@ -201,16 +201,22 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                             <div className="max-w-[250px] space-y-1.5">
                                                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                                                     <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                                                    <span className="line-clamp-2">{details.area || 'No location details'}</span>
+                                                    <span className="line-clamp-2">
+                                                        {typeof details.area === 'object'
+                                                            ? Object.values(details.area).filter(v => typeof v === 'string').join(', ')
+                                                            : (details.area || 'No location details')}
+                                                    </span>
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <div className="flex items-center gap-1.5 text-[10px] text-primary">
                                                         <Calendar className="w-3 h-3" />
-                                                        {details.time ? new Date(details.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
+                                                        {details.time && typeof details.time === 'string'
+                                                            ? new Date(details.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+                                                            : 'N/A'}
                                                     </div>
                                                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                                                         <Clock className="w-3 h-3" />
-                                                        {details.duration || 'N/A'}
+                                                        {typeof details.duration === 'string' ? details.duration : (typeof details.duration === 'number' ? `${details.duration} mins` : 'N/A')}
                                                     </div>
                                                 </div>
                                             </div>
