@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import Link from 'next/link'
 import {
     TrendingUp,
     AlertCircle,
@@ -64,9 +65,9 @@ export default async function AdminDashboard() {
                 <div className="glass-card">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-semibold">Recent Activity</h2>
-                        <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                        <Link href="/admin/requests" className="text-xs text-primary hover:underline flex items-center gap-1">
                             View All <ArrowUpRight className="w-3 h-3" />
-                        </button>
+                        </Link>
                     </div>
 
                     <div className="space-y-4">

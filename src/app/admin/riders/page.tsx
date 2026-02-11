@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { Search, Filter, MoreVertical, Bike, Star, CheckCircle2, Users, MapPin } from 'lucide-react'
 import RiderFormDialog from './rider-form-dialog'
+import RiderActions from './rider-actions'
 
 export default async function RidersPage() {
     const supabase = await createClient()
@@ -137,9 +138,7 @@ export default async function RidersPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white">
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
+                                        <RiderActions riderId={rider.id} isAvailable={rider.is_available} />
                                     </td>
                                 </tr>
                             ))}

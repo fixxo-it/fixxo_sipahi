@@ -1,4 +1,4 @@
-import { Shield, Users, ClipboardList, LogOut, Settings } from 'lucide-react'
+import { Shield, Users, ClipboardList, LogOut, Settings, Package } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
@@ -42,10 +42,17 @@ export default async function AdminLayout({
                         <span>Dashboard</span>
                     </Link>
                     <Link
-                        href="/admin/riders"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary group"
+                        href="/admin/requests"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 transition-colors group"
                     >
-                        <Users className="w-5 h-5" />
+                        <Package className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span>Requests</span>
+                    </Link>
+                    <Link
+                        href="/admin/riders"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 transition-colors group"
+                    >
+                        <Users className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                         <span>Riders</span>
                     </Link>
                     <Link
