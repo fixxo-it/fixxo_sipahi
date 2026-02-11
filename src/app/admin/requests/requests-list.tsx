@@ -62,8 +62,8 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
         return initialRequests.filter(req => {
             // Search filter
             const matchesSearch =
-                req.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                req.user_phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (req.id?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+                (req.user_phone?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
                 (typeof req.details === 'string' ? req.details : JSON.stringify(req.details)).toLowerCase().includes(searchQuery.toLowerCase())
 
             // Service filter
@@ -181,7 +181,7 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                                 </div>
                                                 <div>
                                                     <p className="text-white capitalize">{req.service.replace('_', ' ')}</p>
-                                                    <p className="text-[10px] text-muted-foreground font-mono uppercase">#{req.id.slice(0, 8)}</p>
+                                                    <p className="text-[10px] text-muted-foreground font-mono uppercase">#{req.id?.slice(0, 8)}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -189,11 +189,11 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2 text-sm text-white">
                                                     <User className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    {req.user_phone}
+                                                    {req.user_phone || 'N/A'}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Phone className="w-3.5 h-3.5" />
-                                                    Customer ID: {req.user_id.slice(0, 8)}
+                                                    Customer ID: {req.user_id?.slice(0, 8) || 'N/A'}
                                                 </div>
                                             </div>
                                         </td>
