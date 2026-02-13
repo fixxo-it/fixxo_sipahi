@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreVertical, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { MoreVertical, CheckCircle2, XCircle, Loader2, Trash2 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -27,6 +27,25 @@ export default function RiderActions({ riderId, isAvailable }: RiderActionsProps
         if (error) {
             console.error('Error updating availability:', error)
             alert('Failed to update availability')
+        } else {
+            router.refresh()
+        }
+        setIsLoading(false)
+        setIsOpen(false)
+    }
+
+    const deleteRider = async () => {
+        if (!confirm('Are you sure you want to delete this rider? This action cannot be undone.')) return
+
+        setIsLoading(true)
+        const { error } = await supabase
+            .from('riders')
+            .delete()
+            .eq('id', riderId)
+
+        if (error) {
+            console.error('Error deleting rider:', error)
+            alert('Failed to delete rider')
         } else {
             router.refresh()
         }
@@ -78,7 +97,14 @@ export default function RiderActions({ riderId, isAvailable }: RiderActionsProps
                                         </>
                                     )}
                                 </button>
-                                {/* Future actions can go here */}
+                                <button
+                                    onClick={deleteRider}
+                                    disabled={isLoading}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete Rider</span>
+                                </button>
                             </div>
                         </motion.div>
                     </>
