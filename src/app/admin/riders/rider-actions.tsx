@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreVertical, CheckCircle2, XCircle, Loader2, Trash2 } from 'lucide-react'
+import { MoreVertical, CheckCircle2, XCircle, Loader2, Trash2, Edit } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import RiderFormDialog from './rider-form-dialog'
 
 interface RiderActionsProps {
-    riderId: string
-    isAvailable: boolean
+    rider: any
 }
 
-export default function RiderActions({ riderId, isAvailable }: RiderActionsProps) {
+export default function RiderActions({ rider }: RiderActionsProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
@@ -21,8 +21,8 @@ export default function RiderActions({ riderId, isAvailable }: RiderActionsProps
         setIsLoading(true)
         const { error } = await supabase
             .from('riders')
-            .update({ is_available: !isAvailable })
-            .eq('id', riderId)
+            .update({ is_available: !rider.is_available })
+            .eq('id', rider.id)
 
         if (error) {
             console.error('Error updating availability:', error)
@@ -41,7 +41,7 @@ export default function RiderActions({ riderId, isAvailable }: RiderActionsProps
         const { error } = await supabase
             .from('riders')
             .delete()
-            .eq('id', riderId)
+            .eq('id', rider.id)
 
         if (error) {
             console.error('Error deleting rider:', error)
@@ -80,12 +80,24 @@ export default function RiderActions({ riderId, isAvailable }: RiderActionsProps
                             className="absolute right-0 mt-2 w-48 glass rounded-xl overflow-hidden border border-white/10 z-50 shadow-2xl"
                         >
                             <div className="p-1">
+                                <RiderFormDialog
+                                    rider={rider}
+                                    trigger={
+                                        <button
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/10 rounded-lg transition-colors"
+                                            onClick={() => setIsOpen(false)}
+                                        >
+                                            <Edit className="w-4 h-4 text-primary" />
+                                            <span>Edit Details</span>
+                                        </button>
+                                    }
+                                />
                                 <button
                                     onClick={toggleAvailability}
                                     disabled={isLoading}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/10 rounded-lg transition-colors"
                                 >
-                                    {isAvailable ? (
+                                    {rider.is_available ? (
                                         <>
                                             <XCircle className="w-4 h-4 text-red-500" />
                                             <span>Make Unavailable</span>
@@ -113,3 +125,4 @@ export default function RiderActions({ riderId, isAvailable }: RiderActionsProps
         </div>
     )
 }
+

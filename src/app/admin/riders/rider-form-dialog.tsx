@@ -25,11 +25,18 @@ const SERVICE_TYPES = [
     { value: 'gardener', label: 'Gardener' },
 ]
 
-export default function RiderFormDialog() {
+interface RiderFormDialogProps {
+    rider?: any
+    trigger?: React.ReactNode
+}
+
+export default function RiderFormDialog({ rider, trigger }: RiderFormDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null)
+    const [location, setLocation] = useState<{ lat: number, lng: number } | null>(
+        rider?.latitude && rider?.longitude ? { lat: rider.latitude, lng: rider.longitude } : null
+    )
 
     const router = useRouter()
     const supabase = createClient()
@@ -49,52 +56,67 @@ export default function RiderFormDialog() {
         const service = formData.get('service') as string
         const address = formData.get('address') as string
         const is_available = formData.get('is_available') === 'on'
+        const usernameInput = formData.get('username') as string
+        const passwordInput = formData.get('password') as string
 
-        const username = name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(7)
-        const password = Math.random().toString(36).substring(2, 14).toUpperCase()
+        const finalUsername = usernameInput || (name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(7))
+        const finalPassword = passwordInput || Math.random().toString(36).substring(2, 14).toUpperCase()
 
-        const { error: insertError } = await supabase
-            .from('riders')
-            .insert([
-                {
-                    name,
-                    phone,
-                    service,
-                    is_available,
-                    address,
-                    latitude: location?.lat,
-                    longitude: location?.lng,
-                    rating: 5.0,
-                    username,
-                    password
-                }
-            ])
+        const payload = {
+            name,
+            phone,
+            service,
+            is_available,
+            address,
+            latitude: location?.lat,
+            longitude: location?.lng,
+            username: finalUsername,
+            password: finalPassword
+        }
 
-        if (insertError) {
-            setError(insertError.message)
+        let dbError;
+        if (rider?.id) {
+            const { error } = await supabase
+                .from('riders')
+                .update(payload)
+                .eq('id', rider.id)
+            dbError = error
+        } else {
+            const { error } = await supabase
+                .from('riders')
+                .insert([{ ...payload, rating: 5.0 }])
+            dbError = error
+        }
+
+        if (dbError) {
+            setError(dbError.message)
             setIsLoading(false)
             return
         }
 
         setIsOpen(false)
         setIsLoading(false)
-        setLocation(null)
+        if (!rider) setLocation(null) // Only clear location if it was a new rider
         router.refresh()
     }
 
     return (
         <>
-            <button
-                onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
-            >
-                <Plus className="w-4 h-4" />
-                Add New Rider
-            </button>
+            {trigger ? (
+                <div onClick={() => setIsOpen(true)}>{trigger}</div>
+            ) : (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
+                >
+                    <Plus className="w-4 h-4" />
+                    Add New Rider
+                </button>
+            )}
 
             <AnimatePresence>
                 {isOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -110,7 +132,7 @@ export default function RiderFormDialog() {
                             className="w-full max-w-2xl glass rounded-2xl overflow-hidden relative max-h-[90vh] flex flex-col"
                         >
                             <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
-                                <h2 className="text-xl font-bold text-gradient">Add New Rider</h2>
+                                <h2 className="text-xl font-bold text-gradient">{rider ? 'Edit Rider' : 'Add New Rider'}</h2>
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -135,6 +157,7 @@ export default function RiderFormDialog() {
                                                 id="name"
                                                 name="name"
                                                 type="text"
+                                                defaultValue={rider?.name}
                                                 placeholder="Enter rider name"
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                                             />
@@ -147,6 +170,7 @@ export default function RiderFormDialog() {
                                                 id="phone"
                                                 name="phone"
                                                 type="tel"
+                                                defaultValue={rider?.phone}
                                                 placeholder="e.g. +91 9876543210"
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                                             />
@@ -158,6 +182,7 @@ export default function RiderFormDialog() {
                                                 required
                                                 id="service"
                                                 name="service"
+                                                defaultValue={rider?.service}
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
                                             >
                                                 <option value="" disabled className="bg-background">Select a service</option>
@@ -167,17 +192,44 @@ export default function RiderFormDialog() {
                                             </select>
                                         </div>
 
-                                        <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10 h-[58px]">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10 h-[58px]">
+                                                <input
+                                                    id="is_available"
+                                                    name="is_available"
+                                                    type="checkbox"
+                                                    defaultChecked={rider ? rider.is_available : true}
+                                                    className="w-5 h-5 rounded-md border-white/10 bg-white/5 text-primary focus:ring-primary/50"
+                                                />
+                                                <label htmlFor="is_available" className="text-sm font-medium cursor-pointer">
+                                                    Available
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {/* Username and Token Fields */}
+                                        <div className="space-y-1.5">
+                                            <label htmlFor="username" className="text-sm font-medium text-muted-foreground">Username (Leave blank for auto-gen)</label>
                                             <input
-                                                id="is_available"
-                                                name="is_available"
-                                                type="checkbox"
-                                                defaultChecked
-                                                className="w-5 h-5 rounded-md border-white/10 bg-white/5 text-primary focus:ring-primary/50"
+                                                id="username"
+                                                name="username"
+                                                type="text"
+                                                defaultValue={rider?.username}
+                                                placeholder="Auto-generated if empty"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-sm"
                                             />
-                                            <label htmlFor="is_available" className="text-sm font-medium cursor-pointer">
-                                                Available
-                                            </label>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label htmlFor="password" className="text-sm font-medium text-muted-foreground">Token (Leave blank for auto-gen)</label>
+                                            <input
+                                                id="password"
+                                                name="password"
+                                                type="text"
+                                                defaultValue={rider?.password}
+                                                placeholder="Auto-generated if empty"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-sm uppercase"
+                                            />
                                         </div>
                                     </div>
 
@@ -188,6 +240,7 @@ export default function RiderFormDialog() {
                                             id="address"
                                             name="address"
                                             rows={2}
+                                            defaultValue={rider?.address}
                                             placeholder="Enter full address details"
                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
                                         />
@@ -229,7 +282,7 @@ export default function RiderFormDialog() {
                                             ) : (
                                                 <Save className="w-4 h-4" />
                                             )}
-                                            Save Rider
+                                            {rider ? 'Update Rider' : 'Save Rider'}
                                         </button>
                                     </div>
                                 </form>
@@ -241,3 +294,4 @@ export default function RiderFormDialog() {
         </>
     )
 }
+

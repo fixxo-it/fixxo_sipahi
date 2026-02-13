@@ -138,7 +138,7 @@ export default async function RidersPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <RiderActions riderId={rider.id} isAvailable={rider.is_available} />
+                                        <RiderActions rider={rider} />
                                     </td>
                                 </tr>
                             ))}
