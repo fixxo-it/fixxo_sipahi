@@ -50,6 +50,9 @@ export default function RiderFormDialog() {
         const address = formData.get('address') as string
         const is_available = formData.get('is_available') === 'on'
 
+        const username = name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(7)
+        const password = Math.random().toString(36).substring(2, 14).toUpperCase()
+
         const { error: insertError } = await supabase
             .from('riders')
             .insert([
@@ -61,7 +64,9 @@ export default function RiderFormDialog() {
                     address,
                     latitude: location?.lat,
                     longitude: location?.lng,
-                    rating: 5.0
+                    rating: 5.0,
+                    username,
+                    password
                 }
             ])
 

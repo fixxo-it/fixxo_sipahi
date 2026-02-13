@@ -127,8 +127,8 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                             onChange={(e) => setServiceFilter(e.target.value)}
                         >
                             <option value="all">All Services</option>
-                            {services.map(s => (
-                                <option key={s} value={s}>{s.replace('_', ' ').charAt(0).toUpperCase() + s.slice(1)}</option>
+                            {services.filter(Boolean).map(s => (
+                                <option key={s} value={s}>{s?.replace('_', ' ').charAt(0).toUpperCase() + s?.slice(1)}</option>
                             ))}
                         </select>
                     </div>
@@ -180,7 +180,7 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                                     <Package className="w-5 h-5 text-primary" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-white capitalize">{req.service.replace('_', ' ')}</p>
+                                                    <p className="text-white capitalize">{req.service?.replace('_', ' ') || 'Unknown Service'}</p>
                                                     <p className="text-[10px] text-muted-foreground font-mono uppercase">#{req.id?.slice(0, 8)}</p>
                                                 </div>
                                             </div>
@@ -202,7 +202,7 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                                                     <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                                                     <span className="line-clamp-2">
-                                                        {typeof details.area === 'object'
+                                                        {typeof details.area === 'object' && details.area !== null
                                                             ? Object.values(details.area).filter(v => typeof v === 'string').join(', ')
                                                             : (details.area || 'No location details')}
                                                     </span>
@@ -230,7 +230,7 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                             {req.rider ? (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
-                                                        <span className="text-[10px] font-bold text-green-500">{req.rider.name[0]}</span>
+                                                        <span className="text-[10px] font-bold text-green-500">{req.rider.name?.[0] || 'R'}</span>
                                                     </div>
                                                     <div>
                                                         <p className="text-xs text-white">{req.rider.name}</p>

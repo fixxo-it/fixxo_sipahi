@@ -31,29 +31,44 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
+    const riderSession = request.cookies.get('rider_session')
+    const pathname = request.nextUrl.pathname
+
+    // Allow static files and auth-related paths
+    if (
+        pathname.startsWith('/_next') ||
+        pathname.startsWith('/auth') ||
+        pathname === '/favicon.ico' ||
+        pathname === '/login' ||
+        pathname === '/unauthorized' ||
+        pathname === '/'
+    ) {
+        return supabaseResponse
+    }
+
+    // Role-based protection: Riders
+    if (pathname.startsWith('/rider')) {
+        if (!riderSession) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/login'
+            return NextResponse.redirect(url)
+        }
+        return supabaseResponse
+    }
+
+    // Role-based protection: Admins (Control Panel)
     const ALLOWED_USER_ID = '3431eac0-9d65-4f9a-82d7-91e125631cb8'
     const ALLOWED_EMAIL = 'founder@fixxoit.com'
 
-    if (
-        user &&
-        (user.id !== ALLOWED_USER_ID || user.email !== ALLOWED_EMAIL) &&
-        !request.nextUrl.pathname.startsWith('/unauthorized') &&
-        !request.nextUrl.pathname.startsWith('/login')
-    ) {
+    if (!user) {
         const url = request.nextUrl.clone()
-        url.pathname = '/unauthorized'
+        url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    if (
-        !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/unauthorized') &&
-        request.nextUrl.pathname !== '/'
-    ) {
+    if (user.id !== ALLOWED_USER_ID || user.email !== ALLOWED_EMAIL) {
         const url = request.nextUrl.clone()
-        url.pathname = '/login'
+        url.pathname = '/unauthorized'
         return NextResponse.redirect(url)
     }
 
