@@ -83,7 +83,7 @@ export default async function RiderDashboard() {
                 </div>
 
                 {/* Tasks List */}
-                <RiderTaskList requests={requests || []} riderId={riderId} />
+                <RiderTaskList requests={requests || []} rider={rider} />
             </div>
         </div>
     )
