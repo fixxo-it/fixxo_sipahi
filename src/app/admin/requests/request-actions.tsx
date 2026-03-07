@@ -66,8 +66,9 @@ export default function RequestActions({ request, riders }: RequestActionsProps)
         }
     }
 
-    if (request.status !== 'new') {
-        return null // Only allow assigning new requests for now
+    // Only hide for terminal states — allow assigning new AND scheduled requests
+    if (request.status === 'completed' || request.status === 'cancelled') {
+        return null
     }
 
     return (
