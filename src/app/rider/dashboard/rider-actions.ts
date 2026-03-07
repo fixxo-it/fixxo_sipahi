@@ -1,42 +1,25 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { api } from '@/utils/api'
+import { getRiderToken, getRiderSession } from '@/utils/auth'
 import { revalidatePath } from 'next/cache'
 
 export async function updateRequestStatus(requestId: string, status: string, riderId: string) {
-    const supabase = await createClient()
+    const token = await getRiderToken()
 
-    // 1. Update request status
-    const { error: requestError } = await supabase
-        .from('requests')
-        .update({ status: status })
-        .eq('id', requestId)
+    // Use the backend rider endpoint which validates state machine + logs audit trail
+    const { data, error } = await api.patch(
+        `/riders/${riderId}/requests/${requestId}/status?status=${status}`,
+        undefined,
+        token || undefined
+    )
 
-    if (requestError) {
-        console.error('Error updating request:', requestError)
+    if (error) {
+        console.error('Error updating request:', error)
         return { error: 'Failed to update request' }
     }
 
-    // 2. If status is completed or cancelled, make rider available
-    if (status === 'completed' || status === 'cancelled') {
-        const { error: riderError } = await supabase
-            .from('riders')
-            .update({ is_available: true })
-            .eq('id', riderId)
-
-        if (riderError) {
-            console.error('Error updating rider availability:', riderError)
-        }
-    } else {
-        // For other statuses, rider is busy
-        await supabase
-            .from('riders')
-            .update({ is_available: false })
-            .eq('id', riderId)
-    }
-
     revalidatePath('/rider/dashboard')
-    revalidatePath('/admin/requests')
     return { success: true }
 }
 
@@ -45,31 +28,20 @@ export async function markRequestAsDone(requestId: string, riderId: string) {
 }
 
 export async function markAllRequestsAsDone(riderId: string) {
-    const supabase = await createClient()
+    const token = await getRiderToken()
 
-    // 1. Update all assigned requests for this rider to completed
-    const { error: requestError } = await supabase
-        .from('requests')
-        .update({ status: 'completed' })
-        .eq('assigned_rider_id', riderId)
-        .neq('status', 'completed')
+    // Use the backend's bulk complete endpoint
+    const { data, error } = await api.post(
+        `/riders/${riderId}/requests/complete-all`,
+        undefined,
+        token || undefined
+    )
 
-    if (requestError) {
-        console.error('Error updating all requests:', requestError)
-        return { error: 'Failed to update requests' }
-    }
-
-    // 2. Make rider available
-    const { error: riderError } = await supabase
-        .from('riders')
-        .update({ is_available: true })
-        .eq('id', riderId)
-
-    if (riderError) {
-        console.error('Error updating rider availability:', riderError)
+    if (error) {
+        console.error('Error completing all requests:', error)
+        return { error: 'Failed to complete requests' }
     }
 
     revalidatePath('/rider/dashboard')
-    revalidatePath('/admin/requests')
     return { success: true }
 }

@@ -7,17 +7,11 @@ import {
     Package,
     User,
     Clock,
-    CheckCircle2,
-    XCircle,
+    Calendar,
     MapPin,
     Phone,
-    Calendar,
-    ChevronDown,
-    MoreVertical,
-    CheckCircle,
-    Bike
 } from 'lucide-react'
-// Removed date-fns import
+import RequestActions from './request-actions'
 
 interface Rider {
     id: string
@@ -247,9 +241,7 @@ export default function RequestsList({ initialRequests, riders }: RequestsListPr
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white">
-                                                <MoreVertical className="w-4 h-4" />
-                                            </button>
+                                            <RequestActions request={req} riders={riders} />
                                         </td>
                                     </tr>
                                 )

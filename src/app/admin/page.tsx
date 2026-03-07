@@ -1,4 +1,5 @@
-import { createClient } from '@/utils/supabase/server'
+import { api } from '@/utils/api'
+import { getRiderToken } from '@/utils/auth'
 import Link from 'next/link'
 import {
     TrendingUp,
@@ -10,22 +11,10 @@ import {
 } from 'lucide-react'
 
 export default async function AdminDashboard() {
-    const supabase = await createClient()
+    const token = await getRiderToken()
 
-    // Fetch some stats using head: true for efficiency
-    const { count: totalRequests } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-
-    const { count: activeRiders } = await supabase
-        .from('riders')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_available', true)
-
-    const { count: pendingRequests } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'new')
+    // Fetch stats from the backend API
+    const { data: stats } = await api.get<any>('/admin/stats', token || undefined)
 
     return (
         <div className="space-y-8">
@@ -37,19 +26,19 @@ export default async function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                     title="Total Requests"
-                    value={totalRequests || 0}
+                    value={stats?.total_requests || 0}
                     icon={<Package className="w-5 h-5 text-primary" />}
                     trend="+12%"
                 />
                 <StatsCard
                     title="Active Riders"
-                    value={activeRiders || 0}
+                    value={stats?.active_riders || 0}
                     icon={<Activity className="w-5 h-5 text-green-500" />}
                     trend="+3"
                 />
                 <StatsCard
                     title="Pending Requests"
-                    value={pendingRequests || 0}
+                    value={stats?.pending_requests || 0}
                     icon={<Clock className="w-5 h-5 text-yellow-500" />}
                     trend="-5%"
                 />

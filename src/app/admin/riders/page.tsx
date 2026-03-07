@@ -1,15 +1,13 @@
-import { createClient } from '@/utils/supabase/server'
-import { Search, Filter, MoreVertical, Bike, Star, CheckCircle2, Users, MapPin } from 'lucide-react'
+import { api } from '@/utils/api'
+import { getRiderToken } from '@/utils/auth'
+import { Search, Filter, Bike, Star, CheckCircle2, Users, MapPin } from 'lucide-react'
 import RiderFormDialog from './rider-form-dialog'
 import RiderActions from './rider-actions'
 
 export default async function RidersPage() {
-    const supabase = await createClient()
+    const token = await getRiderToken()
 
-    const { data: riders, error } = await supabase
-        .from('riders')
-        .select('*')
-        .order('created_at', { ascending: false })
+    const { data: riders, error } = await api.get<any[]>('/admin/riders', token || undefined)
 
     if (error) {
         console.error('Error fetching riders:', error)
@@ -41,7 +39,7 @@ export default async function RidersPage() {
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground">Active Now</p>
-                        <p className="text-2xl font-bold">{riders?.filter(r => r.is_available).length || 0}</p>
+                        <p className="text-2xl font-bold">{riders?.filter((r: any) => r.is_available).length || 0}</p>
                     </div>
                 </div>
                 <div className="glass-card flex items-center gap-4">
@@ -85,7 +83,7 @@ export default async function RidersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {riders?.map((rider) => (
+                            {riders?.map((rider: any) => (
                                 <tr key={rider.id} className="hover:bg-white/[0.02] transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">

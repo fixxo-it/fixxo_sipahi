@@ -1,16 +1,8 @@
-import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
+import { clearRiderAuth } from '@/utils/auth'
 
 export async function POST(request: Request) {
-    const supabase = await createClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
-
-    if (user) {
-        await supabase.auth.signOut()
-    }
+    await clearRiderAuth()
 
     return NextResponse.redirect(new URL('/login', request.url), {
         status: 302,

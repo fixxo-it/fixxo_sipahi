@@ -1,36 +1,28 @@
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Bike, LogOut } from 'lucide-react'
+import { getRiderSession, getRiderToken, clearRiderAuth } from '@/utils/auth'
+import { api } from '@/utils/api'
 import RiderTaskList from './task-list'
 
 export default async function RiderDashboard() {
-    const cookieStore = await cookies()
-    const riderId = cookieStore.get('rider_session')?.value
+    const riderId = await getRiderSession()
+    const token = await getRiderToken()
 
-    if (!riderId) {
+    if (!riderId || !token) {
         redirect('/login')
     }
 
-    const supabase = await createClient()
-
-    // Fetch rider details
-    const { data: rider } = await supabase
-        .from('riders')
-        .select('*')
-        .eq('id', riderId)
-        .single()
+    // Fetch rider details from the backend
+    // We use the admin riders list and filter by ID since there's no dedicated rider profile endpoint
+    const { data: riders } = await api.get<any[]>('/admin/riders')
+    const rider = riders?.find((r: any) => r.id === riderId)
 
     if (!rider) {
         redirect('/login')
     }
 
-    // Fetch assigned requests
-    const { data: requests } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('assigned_rider_id', riderId)
-        .order('created_at', { ascending: false })
+    // Fetch assigned requests for this rider
+    const { data: requests } = await api.get<any[]>(`/riders/${riderId}/requests`, token)
 
     return (
         <div className="min-h-screen bg-background p-4 md:p-8">
@@ -51,8 +43,7 @@ export default async function RiderDashboard() {
                     </div>
                     <form action={async () => {
                         'use server'
-                        const cookieStore = await cookies()
-                        cookieStore.delete('rider_session')
+                        await clearRiderAuth()
                         redirect('/login')
                     }}>
                         <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm transition-all border border-white/10">
@@ -66,11 +57,11 @@ export default async function RiderDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="glass p-4 rounded-xl border border-white/10">
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Assigned</p>
-                        <p className="text-2xl font-bold text-white mt-1">{requests?.filter(r => r.status === 'assigned').length || 0}</p>
+                        <p className="text-2xl font-bold text-white mt-1">{requests?.filter((r: any) => r.status === 'assigned').length || 0}</p>
                     </div>
                     <div className="glass p-4 rounded-xl border border-white/10">
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Completed</p>
-                        <p className="text-2xl font-bold text-green-500 mt-1">{requests?.filter(r => r.status === 'completed').length || 0}</p>
+                        <p className="text-2xl font-bold text-green-500 mt-1">{requests?.filter((r: any) => r.status === 'completed').length || 0}</p>
                     </div>
                     <div className="glass p-4 rounded-xl border border-white/10">
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Rating</p>

@@ -1,26 +1,21 @@
 import { Shield, Users, ClipboardList, LogOut, Settings, Package } from 'lucide-react'
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { getRiderSession, clearRiderAuth } from '@/utils/auth'
 
 export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const session = await getRiderSession()
 
-    if (!user) {
+    if (!session) {
         redirect('/login')
     }
 
-    const ALLOWED_USER_ID = '3431eac0-9d65-4f9a-82d7-91e125631cb8'
-    const ALLOWED_EMAIL = 'founder@fixxoit.com'
-
-    if (user.id !== ALLOWED_USER_ID || user.email !== ALLOWED_EMAIL) {
-        redirect('/unauthorized')
-    }
+    // TODO: Add proper admin role check
+    // For now, any authenticated user can access admin
 
     return (
         <div className="min-h-screen bg-background flex">
@@ -65,15 +60,11 @@ export default async function AdminLayout({
                 </nav>
 
                 <div className="p-4 border-t border-border">
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                            {user.email?.[0].toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{user.email}</p>
-                        </div>
-                    </div>
-                    <form action="/auth/signout" method="post">
+                    <form action={async () => {
+                        'use server'
+                        await clearRiderAuth()
+                        redirect('/login')
+                    }}>
                         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors mt-2">
                             <LogOut className="w-5 h-5" />
                             <span>Sign Out</span>

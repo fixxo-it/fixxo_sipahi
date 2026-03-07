@@ -1,26 +1,16 @@
-import { createClient } from '@/utils/supabase/server'
+import { api } from '@/utils/api'
+import { getRiderToken } from '@/utils/auth'
 import RequestsList from './requests-list'
 import { Package, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default async function RequestsPage() {
-    const supabase = await createClient()
+    const token = await getRiderToken()
 
-    // Fetch initial requests with joined rider data
-    // Note: We use !assigned_rider_id to specify the join if there are multiple foreign keys, 
-    // but usually it's inferred if there's only one.
-    const { data: requests, error } = await supabase
-        .from('requests')
-        .select(`
-            *,
-            rider:riders(id, name, phone, service)
-        `)
-        .order('created_at', { ascending: false })
+    // Fetch requests with rider data from the backend
+    const { data: requests, error } = await api.get<any[]>('/admin/requests', token || undefined)
 
-    // Fetch all riders for the filter dropdown
-    const { data: riders } = await supabase
-        .from('riders')
-        .select('id, name, phone, service')
-        .order('name')
+    // Fetch riders for the filter dropdown
+    const { data: riders } = await api.get<any[]>('/admin/riders', token || undefined)
 
     if (error) {
         console.error('Error fetching requests:', error)
@@ -28,9 +18,9 @@ export default async function RequestsPage() {
 
     const stats = {
         total: requests?.length || 0,
-        pending: requests?.filter(r => r.status === 'new').length || 0,
-        completed: requests?.filter(r => r.status === 'completed').length || 0,
-        unassigned: requests?.filter(r => !r.assigned_rider_id).length || 0
+        pending: requests?.filter((r: any) => r.status === 'new').length || 0,
+        completed: requests?.filter((r: any) => r.status === 'completed').length || 0,
+        unassigned: requests?.filter((r: any) => !r.assigned_rider_id).length || 0
     }
 
     return (

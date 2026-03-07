@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Plus, X, Loader2, Save, MapPin } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
 
 // Dynamically import map to avoid SSR issues
 const MapPicker = dynamic(() => import('./map-picker'), {
@@ -39,7 +40,6 @@ export default function RiderFormDialog({ rider, trigger }: RiderFormDialogProps
     )
 
     const router = useRouter()
-    const supabase = createClient()
 
     const handleLocationSelect = (lat: number, lng: number) => {
         setLocation({ lat, lng })
@@ -56,11 +56,6 @@ export default function RiderFormDialog({ rider, trigger }: RiderFormDialogProps
         const service = formData.get('service') as string
         const address = formData.get('address') as string
         const is_available = formData.get('is_available') === 'on'
-        const usernameInput = formData.get('username') as string
-        const passwordInput = formData.get('password') as string
-
-        const finalUsername = usernameInput || (name.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substring(7))
-        const finalPassword = passwordInput || Math.random().toString(36).substring(2, 14).toUpperCase()
 
         const payload = {
             name,
@@ -70,34 +65,39 @@ export default function RiderFormDialog({ rider, trigger }: RiderFormDialogProps
             address,
             latitude: location?.lat,
             longitude: location?.lng,
-            username: finalUsername,
-            password: finalPassword
         }
 
-        let dbError;
-        if (rider?.id) {
-            const { error } = await supabase
-                .from('riders')
-                .update(payload)
-                .eq('id', rider.id)
-            dbError = error
-        } else {
-            const { error } = await supabase
-                .from('riders')
-                .insert([{ ...payload, rating: 5.0 }])
-            dbError = error
+        try {
+            let res: Response
+            if (rider?.id) {
+                // Update existing rider
+                res = await fetch(`${API_BASE_URL}/admin/riders/${rider.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })
+            } else {
+                // Create new rider
+                res = await fetch(`${API_BASE_URL}/admin/riders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...payload, rating: 5.0 }),
+                })
+            }
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.detail || 'Failed to save rider')
+            }
+
+            setIsOpen(false)
+            if (!rider) setLocation(null)
+            router.refresh()
+        } catch (err: any) {
+            setError(err.message || 'Something went wrong')
         }
 
-        if (dbError) {
-            setError(dbError.message)
-            setIsLoading(false)
-            return
-        }
-
-        setIsOpen(false)
         setIsLoading(false)
-        if (!rider) setLocation(null) // Only clear location if it was a new rider
-        router.refresh()
     }
 
     return (
@@ -206,31 +206,6 @@ export default function RiderFormDialog({ rider, trigger }: RiderFormDialogProps
                                                 </label>
                                             </div>
                                         </div>
-
-                                        {/* Username and Token Fields */}
-                                        <div className="space-y-1.5">
-                                            <label htmlFor="username" className="text-sm font-medium text-muted-foreground">Username (Leave blank for auto-gen)</label>
-                                            <input
-                                                id="username"
-                                                name="username"
-                                                type="text"
-                                                defaultValue={rider?.username}
-                                                placeholder="Auto-generated if empty"
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label htmlFor="password" className="text-sm font-medium text-muted-foreground">Token (Leave blank for auto-gen)</label>
-                                            <input
-                                                id="password"
-                                                name="password"
-                                                type="text"
-                                                defaultValue={rider?.password}
-                                                placeholder="Auto-generated if empty"
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-sm uppercase"
-                                            />
-                                        </div>
                                     </div>
 
                                     <div className="space-y-1.5">
@@ -294,4 +269,3 @@ export default function RiderFormDialog({ rider, trigger }: RiderFormDialogProps
         </>
     )
 }
-

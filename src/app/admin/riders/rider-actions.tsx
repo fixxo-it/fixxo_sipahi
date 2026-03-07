@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { MoreVertical, CheckCircle2, XCircle, Loader2, Trash2, Edit } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import RiderFormDialog from './rider-form-dialog'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
 
 interface RiderActionsProps {
     rider: any
@@ -15,20 +16,23 @@ export default function RiderActions({ rider }: RiderActionsProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
-    const supabase = createClient()
 
     const toggleAvailability = async () => {
         setIsLoading(true)
-        const { error } = await supabase
-            .from('riders')
-            .update({ is_available: !rider.is_available })
-            .eq('id', rider.id)
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/riders/${rider.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_available: !rider.is_available }),
+            })
 
-        if (error) {
-            console.error('Error updating availability:', error)
-            alert('Failed to update availability')
-        } else {
+            if (!res.ok) {
+                throw new Error('Failed to update availability')
+            }
             router.refresh()
+        } catch (err) {
+            console.error('Error updating availability:', err)
+            alert('Failed to update availability')
         }
         setIsLoading(false)
         setIsOpen(false)
@@ -38,16 +42,18 @@ export default function RiderActions({ rider }: RiderActionsProps) {
         if (!confirm('Are you sure you want to delete this rider? This action cannot be undone.')) return
 
         setIsLoading(true)
-        const { error } = await supabase
-            .from('riders')
-            .delete()
-            .eq('id', rider.id)
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/riders/${rider.id}`, {
+                method: 'DELETE',
+            })
 
-        if (error) {
-            console.error('Error deleting rider:', error)
-            alert('Failed to delete rider')
-        } else {
+            if (!res.ok) {
+                throw new Error('Failed to delete rider')
+            }
             router.refresh()
+        } catch (err) {
+            console.error('Error deleting rider:', err)
+            alert('Failed to delete rider')
         }
         setIsLoading(false)
         setIsOpen(false)
@@ -125,4 +131,3 @@ export default function RiderActions({ rider }: RiderActionsProps) {
         </div>
     )
 }
-

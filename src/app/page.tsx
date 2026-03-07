@@ -1,12 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/utils/supabase/server'
+import { getRiderSession } from '@/utils/auth'
 
 export default async function RootPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await getRiderSession()
 
-  if (user) {
-    redirect('/admin')
+  if (session) {
+    redirect('/rider/dashboard')
   } else {
     redirect('/login')
   }
